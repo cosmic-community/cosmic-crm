@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getContactBySlug, getContactActivity } from '@/lib/cosmic';
 import ContactProfile from '@/components/ContactProfile';
 import ContactActivityFeed from '@/components/ContactActivityFeed';
+import type { ActivityLogEntry } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ export default async function ContactDetailPage({ params }: ContactDetailPagePro
     notFound();
   }
 
-  let activities = [];
+  let activities: ActivityLogEntry[] = [];
   try {
     activities = await getContactActivity(contact.id);
   } catch {

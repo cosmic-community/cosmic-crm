@@ -1,7 +1,8 @@
 // app/api/contacts/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { updateContact, deleteContact, createActivityEntry } from '@/lib/cosmic';
+import { getContactById, updateContact, deleteContact, createActivityEntry } from '@/lib/cosmic';
 import type { ContactFormData } from '@/types';
+import { hasStatus } from '@/types';
 
 export async function PATCH(
   request: Request,
@@ -9,15 +10,24 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const body = (await request.json()) as Partial<ContactFormData>;
 
+    // Validate the contact exists before attempting update
+    const existing = await getContactById(id);
+    if (!existing) {
+      return NextResponse.json(
+        { error: `Contact not found: ${id}` },
+        { status: 404 }
+      );
+    }
+
+    const body = (await request.json()) as Partial<ContactFormData>;
     const contact = await updateContact(id, body);
 
     // Log the activity
     try {
       await createActivityEntry({
         action_type: 'Contact Updated',
-        description: `Contact "${body.name || 'Unknown'}" was updated`,
+        description: `Contact "${body.name || existing.metadata?.name || 'Unknown'}" was updated`,
         contact: id,
         performed_by: 'Dashboard User',
       });
@@ -27,10 +37,12 @@ export async function PATCH(
 
     return NextResponse.json({ contact });
   } catch (error) {
-    console.error('Error updating contact:', error);
+    const status = hasStatus(error) ? error.status : 500;
+    const message = error instanceof Error ? error.message : 'Failed to update contact';
+    console.error('Error updating contact:', message, error);
     return NextResponse.json(
-      { error: 'Failed to update contact' },
-      { status: 500 }
+      { error: message },
+      { status }
     );
   }
 }
@@ -42,13 +54,22 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    // Validate the contact exists before attempting delete
+    const existing = await getContactById(id);
+    if (!existing) {
+      return NextResponse.json(
+        { error: `Contact not found: ${id}` },
+        { status: 404 }
+      );
+    }
+
     await deleteContact(id);
 
     // Log the activity
     try {
       await createActivityEntry({
         action_type: 'Status Change',
-        description: 'A contact was deleted from the CRM',
+        description: `Contact "${existing.metadata?.name || 'Unknown'}" was deleted from the CRM`,
         performed_by: 'Dashboard User',
       });
     } catch {
@@ -57,10 +78,12 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting contact:', error);
+    const status = hasStatus(error) ? error.status : 500;
+    const message = error instanceof Error ? error.message : 'Failed to delete contact';
+    console.error('Error deleting contact:', message, error);
     return NextResponse.json(
-      { error: 'Failed to delete contact' },
-      { status: 500 }
+      { error: message },
+      { status }
     );
   }
 }

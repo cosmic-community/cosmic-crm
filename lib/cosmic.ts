@@ -48,6 +48,21 @@ export async function getContactBySlug(slug: string): Promise<CRMContact | null>
   }
 }
 
+export async function getContactById(id: string): Promise<CRMContact | null> {
+  try {
+    const response = await cosmic.objects.findOne({
+      type: 'crm-contacts',
+      id,
+    }).props(['id', 'slug', 'title', 'metadata', 'created_at', 'modified_at']).depth(1);
+    return response.object as CRMContact;
+  } catch (error) {
+    if (hasStatus(error) && error.status === 404) {
+      return null;
+    }
+    throw new Error('Failed to fetch contact by ID');
+  }
+}
+
 export async function createContact(data: ContactFormData): Promise<CRMContact> {
   const response = await cosmic.objects.insertOne({
     type: 'crm-contacts',
@@ -84,12 +99,28 @@ export async function updateContact(id: string, data: Partial<ContactFormData>):
   const updatePayload: Record<string, unknown> = { metadata };
   if (data.name !== undefined) updatePayload.title = data.name;
 
-  const response = await cosmic.objects.updateOne(id, updatePayload);
-  return response.object as CRMContact;
+  try {
+    const response = await cosmic.objects.updateOne(id, updatePayload);
+    return response.object as CRMContact;
+  } catch (error) {
+    if (hasStatus(error) && error.status === 404) {
+      throw Object.assign(new Error(`Contact not found: ${id}`), { status: 404 });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw Object.assign(new Error(`Failed to update contact: ${message}`), { status: 500 });
+  }
 }
 
 export async function deleteContact(id: string): Promise<void> {
-  await cosmic.objects.deleteOne(id);
+  try {
+    await cosmic.objects.deleteOne(id);
+  } catch (error) {
+    if (hasStatus(error) && error.status === 404) {
+      throw Object.assign(new Error(`Contact not found: ${id}`), { status: 404 });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw Object.assign(new Error(`Failed to delete contact: ${message}`), { status: 500 });
+  }
 }
 
 // ========== ACTIVITY LOG ==========

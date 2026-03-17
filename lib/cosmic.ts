@@ -16,6 +16,44 @@ export const cosmic = createBucketClient({
   apiEnvironment: 'staging',
 });
 
+// Helper to extract a meaningful error message from any error type
+function extractErrorMessage(error: unknown): string {
+  // Log the full raw error for debugging
+  try {
+    console.error('[Cosmic SDK Raw Error]', JSON.stringify(error, null, 2));
+  } catch {
+    console.error('[Cosmic SDK Raw Error] (non-serializable)', error);
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && error !== null) {
+    const err = error as Record<string, unknown>;
+    // Check common error shape properties
+    if (typeof err.message === 'string') return err.message;
+    if (typeof err.error === 'string') return err.error;
+    if (err.data && typeof err.data === 'object') {
+      const data = err.data as Record<string, unknown>;
+      if (typeof data.message === 'string') return data.message;
+      if (typeof data.error === 'string') return data.error;
+    }
+    if (err.body && typeof err.body === 'object') {
+      const body = err.body as Record<string, unknown>;
+      if (typeof body.message === 'string') return body.message;
+      if (typeof body.error === 'string') return body.error;
+    }
+    // Last resort: stringify the whole thing
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return 'Unknown error (non-serializable object)';
+    }
+  }
+  if (typeof error === 'string') return error;
+  return 'Unknown error';
+}
+
 // ========== CRM CONTACTS ==========
 
 export async function getContacts(): Promise<CRMContact[]> {
@@ -99,6 +137,8 @@ export async function updateContact(id: string, data: Partial<ContactFormData>):
   const updatePayload: Record<string, unknown> = { metadata };
   if (data.name !== undefined) updatePayload.title = data.name;
 
+  console.log(`[updateContact] Attempting update for contact ${id}`, JSON.stringify(updatePayload));
+
   try {
     const response = await cosmic.objects.updateOne(id, updatePayload);
     return response.object as CRMContact;
@@ -106,7 +146,8 @@ export async function updateContact(id: string, data: Partial<ContactFormData>):
     if (hasStatus(error) && error.status === 404) {
       throw Object.assign(new Error(`Contact not found: ${id}`), { status: 404 });
     }
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = extractErrorMessage(error);
+    console.error(`[updateContact] Failed for contact ${id}:`, message);
     throw Object.assign(new Error(`Failed to update contact: ${message}`), { status: 500 });
   }
 }
@@ -118,7 +159,8 @@ export async function deleteContact(id: string): Promise<void> {
     if (hasStatus(error) && error.status === 404) {
       throw Object.assign(new Error(`Contact not found: ${id}`), { status: 404 });
     }
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = extractErrorMessage(error);
+    console.error(`[deleteContact] Failed for contact ${id}:`, message);
     throw Object.assign(new Error(`Failed to delete contact: ${message}`), { status: 500 });
   }
 }

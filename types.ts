@@ -142,11 +142,33 @@ export interface CosmicListResponse<T> {
   total: number;
 }
 
-// Contact status types
-export type ContactStatus = 'Active' | 'Inactive' | 'Lead' | 'Prospect' | 'Customer' | 'Churned';
+// Contact status types — aligned with CMS crm-contacts schema
+export type ContactStatus =
+  | 'New'
+  | 'Lead'
+  | 'Prospect'
+  | 'Qualified'
+  | 'Welcome Email Sent'
+  | 'Onboarding'
+  | 'Onboarded'
+  | 'Active'
+  | 'Customer'
+  | 'Inactive'
+  | 'Churned';
 
-// Activity action types
-export type ActionType = 'Email Sent' | 'Status Change' | 'Note Added' | 'Contact Created' | 'Contact Updated' | 'Cron Job' | 'Login' | 'Signup';
+// Activity action types — aligned with CMS activity-log schema
+export type ActionType =
+  | 'Email Sent'
+  | 'Status Change'
+  | 'User Created'
+  | 'Contact Created'
+  | 'Contact Updated'
+  | 'Meeting Scheduled'
+  | 'Cron Job'
+  | 'Note Added'
+  | 'Manual Action'
+  | 'Login'
+  | 'Signup';
 
 // Helper to safely extract string value from select-dropdown metafields
 export function getMetafieldValue(field: unknown): string {

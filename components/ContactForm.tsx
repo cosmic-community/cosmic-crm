@@ -22,7 +22,7 @@ export default function ContactForm({ contact, mode }: ContactFormProps) {
     job_title: getMetafieldValue(contact?.metadata?.job_title),
     phone: contact?.metadata?.phone || '',
     status: getMetafieldValue(contact?.metadata?.status) || 'Lead',
-    lead_source: getMetafieldValue(contact?.metadata?.lead_source),
+    lead_source: getMetafieldValue(contact?.metadata?.lead_source) || '',
     notes: contact?.metadata?.notes || '',
     lifetime_value: String(contact?.metadata?.lifetime_value || '0'),
   });
@@ -161,8 +161,13 @@ export default function ContactForm({ contact, mode }: ContactFormProps) {
             onChange={handleChange}
             className="input-field"
           >
+            <option value="New">New</option>
             <option value="Lead">Lead</option>
             <option value="Prospect">Prospect</option>
+            <option value="Qualified">Qualified</option>
+            <option value="Welcome Email Sent">Welcome Email Sent</option>
+            <option value="Onboarding">Onboarding</option>
+            <option value="Onboarded">Onboarded</option>
             <option value="Active">Active</option>
             <option value="Customer">Customer</option>
             <option value="Inactive">Inactive</option>
@@ -173,15 +178,27 @@ export default function ContactForm({ contact, mode }: ContactFormProps) {
         {/* Lead Source */}
         <div>
           <label htmlFor="lead_source" className="label">Lead Source</label>
-          <input
+          <select
             id="lead_source"
             name="lead_source"
-            type="text"
             value={formData.lead_source}
             onChange={handleChange}
             className="input-field"
-            placeholder="Website, Referral, LinkedIn..."
-          />
+          >
+            <option value="">Select a source...</option>
+            <option value="Organic">Organic</option>
+            <option value="Referral">Referral</option>
+            <option value="Paid">Paid</option>
+            <option value="Social">Social</option>
+            <option value="Manual">Manual</option>
+            <option value="LinkedIn">LinkedIn</option>
+            <option value="Cold Outreach">Cold Outreach</option>
+            <option value="Website">Website</option>
+            <option value="Event">Event</option>
+            <option value="Conference">Conference</option>
+            <option value="Demo Request">Demo Request</option>
+            <option value="Content Marketing">Content Marketing</option>
+          </select>
         </div>
 
         {/* Lifetime Value */}
